@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Printer, Upload, Layout, Image as ImageIcon, Plus, Trash2, Type } from 'lucide-react';
+import { Printer, Upload, Layout, Image as ImageIcon, Plus, Trash2, Type, Palette, Maximize, Grid } from 'lucide-react';
 
 // Types
 interface DocumentItem {
   title: string;
 }
+
+type Theme = 'classic' | 'modern' | 'bold' | 'minimal' | 'industrial' | 'box-archive';
+type PrintMode = 'grid' | 'single';
 
 interface LabelData {
   id: number;
@@ -39,9 +42,21 @@ const FONT_OPTIONS = [
   { name: "System UI", value: "system-ui" },
 ];
 
+const THEME_OPTIONS: { value: Theme; name: string }[] = [
+  { value: 'classic', name: 'Classic Engineering' },
+  { value: 'modern', name: 'Modern Clean' },
+  { value: 'bold', name: 'Bold Impact' },
+  { value: 'minimal', name: 'Minimalist' },
+  { value: 'industrial', name: 'Industrial Caution' },
+  { value: 'box-archive', name: 'Box Archive' },
+];
+
 export default function App() {
   const [isGlobalMode, setIsGlobalMode] = useState(true);
   const [selectedLabelIndex, setSelectedLabelIndex] = useState<number>(0);
+  const [currentTheme, setCurrentTheme] = useState<Theme>('classic');
+  const [printMode, setPrintMode] = useState<PrintMode>('grid');
+  const [labelPadding, setLabelPadding] = useState<number>(24); // Default 24px (p-6)
   
   // Initialize 4 labels
   const [labels, setLabels] = useState<LabelData[]>([
@@ -190,6 +205,80 @@ export default function App() {
             <p className="text-xs text-gray-500">
               {isGlobalMode ? "Changes apply to ALL 4 labels." : "Select a label in the preview to edit it individually."}
             </p>
+          </div>
+
+          {/* Print Layout & Padding */}
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-4">
+            <div>
+              <div className="flex items-center space-x-2 text-gray-700 font-medium text-sm mb-3">
+                <Printer className="w-4 h-4" />
+                <span>Print Layout</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPrintMode('grid')}
+                  className={`flex-1 flex items-center justify-center px-3 py-2 text-sm rounded-md border transition-all ${
+                    printMode === 'grid'
+                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Grid className="w-4 h-4 mr-2" />
+                  A4 Grid (4)
+                </button>
+                <button
+                  onClick={() => setPrintMode('single')}
+                  className={`flex-1 flex items-center justify-center px-3 py-2 text-sm rounded-md border transition-all ${
+                    printMode === 'single'
+                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Maximize className="w-4 h-4 mr-2" />
+                  Single (1)
+                </button>
+              </div>
+            </div>
+
+            {/* Padding Slider */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-xs font-medium text-gray-600">Label Padding (Whitespace)</label>
+                <span className="text-xs text-gray-500">{labelPadding}px</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="60"
+                value={labelPadding}
+                onChange={(e) => setLabelPadding(parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              />
+            </div>
+          </div>
+
+          {/* Theme Selector */}
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex items-center space-x-2 text-gray-700 font-medium text-sm mb-3">
+              <Palette className="w-4 h-4" />
+              <span>Design Theme</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {THEME_OPTIONS.map((theme) => (
+                <button
+                  key={theme.value}
+                  onClick={() => setCurrentTheme(theme.value)}
+                  className={`flex items-center justify-between px-3 py-2 text-sm rounded-md border transition-all ${
+                    currentTheme === theme.value
+                      ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {theme.name}
+                  {currentTheme === theme.value && <div className="w-2 h-2 rounded-full bg-indigo-500"></div>}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Label Selector (Only visible in Individual Mode) */}
@@ -372,80 +461,371 @@ export default function App() {
       <main className="flex-1 p-8 flex items-center justify-center bg-gray-100 print:p-0 print:bg-white overflow-auto">
         {/* A4 Container */}
         <div 
-          className="bg-white shadow-2xl print:shadow-none relative mx-auto"
+          className="bg-white shadow-2xl print:shadow-none relative mx-auto transition-all duration-300"
           style={{
-            width: '297mm',
-            height: '210mm',
+            width: printMode === 'grid' ? '297mm' : '148.5mm',
+            height: printMode === 'grid' ? '210mm' : '105mm',
             boxSizing: 'border-box',
           }}
         >
           {/* Grid Layout */}
-          <div className="w-full h-full grid grid-cols-2 grid-rows-2">
-            {labels.map((label, index) => (
-              <div 
-                key={label.id}
-                onClick={() => !isGlobalMode && setSelectedLabelIndex(index)}
-                className={`
-                  relative box-border flex flex-col p-6 justify-center items-center
-                  ${!isGlobalMode && selectedLabelIndex === index ? 'bg-indigo-50' : ''}
-                `}
-              >
-                {/* Inner Content Container - The Label Box */}
+          <div className={`w-full h-full ${printMode === 'grid' ? 'grid grid-cols-2 grid-rows-2' : 'flex'}`}>
+            {labels.map((label, index) => {
+              // In single mode, only show the selected label
+              if (printMode === 'single' && index !== selectedLabelIndex) return null;
+
+              return (
                 <div 
+                  key={label.id}
+                  onClick={() => !isGlobalMode && setSelectedLabelIndex(index)}
                   className={`
-                    flex flex-col w-full h-full border-[3px] border-black bg-white shadow-sm print:shadow-none
-                    ${!isGlobalMode && selectedLabelIndex === index ? 'ring-2 ring-indigo-500 ring-offset-2 print:ring-0' : ''}
+                    relative box-border flex flex-col justify-center items-center
+                    ${printMode === 'single' ? 'w-full h-full' : ''}
+                    ${!isGlobalMode && selectedLabelIndex === index && printMode === 'grid' ? 'bg-indigo-50' : ''}
                   `}
-                  style={{ fontFamily: label.fontFamily }}
+                  style={{ padding: `${labelPadding}px` }}
                 >
-                  
-                  {/* Section 1: Logos (Top) */}
-                  <div className="h-[30%] border-b-[2px] border-black flex items-center justify-around px-4 py-1 bg-white">
-                    {label.logos.length > 0 ? (
-                      label.logos.map((logo, i) => (
-                        <img key={i} src={logo} alt="Logo" className="h-full max-w-[30%] object-contain" />
-                      ))
-                    ) : (
-                      <div className="text-gray-300 text-xs italic">Upload Logos</div>
+                  {/* Inner Content Container - The Label Box */}
+                  <div 
+                    className={`
+                      flex flex-col w-full h-full bg-white shadow-sm print:shadow-none overflow-hidden
+                      ${!isGlobalMode && selectedLabelIndex === index && printMode === 'grid' ? 'ring-2 ring-indigo-500 ring-offset-2 print:ring-0' : ''}
+                      ${currentTheme === 'classic' ? 'border-[3px] border-black' : ''}
+                      ${currentTheme === 'modern' ? 'border border-gray-300 rounded-xl' : ''}
+                      ${currentTheme === 'bold' ? 'border-4 border-black' : ''}
+                    `}
+                    style={{ fontFamily: label.fontFamily }}
+                  >
+                    
+                    {/* === CLASSIC THEME === */}
+                    {currentTheme === 'classic' && (
+                      <>
+                        {/* Section 1: Logos (Top) */}
+                        <div className="h-[30%] border-b-[2px] border-black flex items-center justify-around px-4 py-1 bg-white overflow-hidden">
+                          {label.logos.length > 0 ? (
+                            label.logos.map((logo, i) => (
+                              <img key={i} src={logo} alt="Logo" className="h-full w-auto max-w-[150px] object-contain" />
+                            ))
+                          ) : (
+                            <div className="text-gray-300 text-xs italic">Upload Logos</div>
+                          )}
+                        </div>
+
+                        {/* Section 2: Title & Ref (Middle) */}
+                        <div className="h-[40%] border-b-[2px] border-black flex flex-col justify-center items-center px-4 text-center bg-white overflow-hidden">
+                          <div className="flex-1 flex flex-col justify-center w-full">
+                            {label.documents.map((doc, i) => (
+                              <h2 
+                                key={i} 
+                                className="font-bold text-black uppercase leading-tight mb-1 last:mb-2"
+                                style={{ fontSize: `${label.fontSizeTitle}px` }}
+                              >
+                                {doc.title || "DOCUMENT TITLE"}
+                              </h2>
+                            ))}
+                          </div>
+                          <div className="mt-auto pb-2">
+                            <span 
+                              className="font-bold text-black pb-0.5 inline-block"
+                              style={{ fontSize: `${label.fontSizeRef}px` }}
+                            >
+                              {label.refNumber || "REF-NO"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Section 3: Footer / Description (Bottom) */}
+                        <div className="flex-1 flex flex-col justify-center items-center px-4 py-2 text-center bg-white">
+                          <p 
+                            className="whitespace-pre-wrap font-bold text-black uppercase leading-tight"
+                            style={{ fontSize: `${label.fontSizeDesc}px` }}
+                          >
+                            {label.description}
+                          </p>
+                        </div>
+                      </>
                     )}
-                  </div>
 
-                  {/* Section 2: Title & Ref (Middle) */}
-                  <div className="h-[40%] border-b-[2px] border-black flex flex-col justify-center items-center px-4 text-center bg-white overflow-hidden">
-                    <div className="flex-1 flex flex-col justify-center w-full">
-                      {label.documents.map((doc, i) => (
-                        <h2 
-                          key={i} 
-                          className="font-bold text-black uppercase leading-tight mb-1 last:mb-2"
-                          style={{ fontSize: `${label.fontSizeTitle}px` }}
-                        >
-                          {doc.title || "DOCUMENT TITLE"}
-                        </h2>
-                      ))}
-                    </div>
-                    <div className="mt-auto pb-2">
-                      <span 
-                        className="font-bold text-black pb-0.5 inline-block"
-                        style={{ fontSize: `${label.fontSizeRef}px` }}
-                      >
-                        {label.refNumber || "REF-NO"}
-                      </span>
-                    </div>
-                  </div>
+                    {/* === MODERN THEME === */}
+                    {currentTheme === 'modern' && (
+                      <div className="flex flex-col h-full p-6">
+                        {/* Header: Logos Only */}
+                        <div className="flex items-center h-[20%] mb-4">
+                          <div className="flex gap-4 h-full w-full">
+                            {label.logos.length > 0 ? (
+                              label.logos.map((logo, i) => (
+                                <img key={i} src={logo} alt="Logo" className="h-full w-auto max-w-[150px] object-contain" />
+                              ))
+                            ) : (
+                              <div className="text-gray-300 text-xs italic self-center">Upload Logos</div>
+                            )}
+                          </div>
+                        </div>
 
-                  {/* Section 3: Footer / Description (Bottom) */}
-                  <div className="flex-1 flex flex-col justify-center items-center px-4 py-2 text-center bg-white">
-                    <p 
-                      className="whitespace-pre-wrap font-bold text-black uppercase leading-tight"
-                      style={{ fontSize: `${label.fontSizeDesc}px` }}
-                    >
-                      {label.description}
-                    </p>
-                  </div>
+                        {/* Body: Titles */}
+                        <div className="flex-1 flex flex-col justify-center border-l-4 border-indigo-600 pl-6 my-2">
+                          {label.documents.map((doc, i) => (
+                            <h2 
+                              key={i} 
+                              className="font-bold text-gray-900 leading-tight mb-2 last:mb-0"
+                              style={{ fontSize: `${label.fontSizeTitle}px` }}
+                            >
+                              {doc.title || "Document Title"}
+                            </h2>
+                          ))}
+                        </div>
 
+                        {/* Footer: Ref & Desc */}
+                        <div className="mt-auto pt-4 border-t border-gray-100">
+                          <div className="mb-2">
+                            <span 
+                              className="font-bold text-gray-900 block"
+                              style={{ fontSize: `${label.fontSizeRef}px` }}
+                            >
+                              {label.refNumber || "REF-NO"}
+                            </span>
+                          </div>
+                          <p 
+                            className="whitespace-pre-wrap text-gray-600"
+                            style={{ fontSize: `${label.fontSizeDesc}px` }}
+                          >
+                            {label.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* === BOLD THEME === */}
+                    {currentTheme === 'bold' && (
+                      <div className="flex flex-col h-full">
+                        {/* Header: Black Bar (Logos Only) */}
+                        <div className="bg-black text-white p-4 flex items-center h-[20%]">
+                          <div className="flex gap-4 h-full items-center w-full">
+                            {label.logos.length > 0 ? (
+                              label.logos.map((logo, i) => (
+                                <div key={i} className="h-full bg-white p-1 rounded-sm">
+                                  <img src={logo} alt="Logo" className="h-full w-auto max-w-[150px] object-contain" />
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-gray-500 text-xs italic">Logos</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Body: Centered Big Text */}
+                        <div className="flex-1 flex flex-col justify-center items-center p-8 text-center bg-white">
+                          {label.documents.map((doc, i) => (
+                            <h2 
+                              key={i} 
+                              className="font-black text-black uppercase leading-none mb-4 last:mb-0"
+                              style={{ fontSize: `${label.fontSizeTitle * 1.2}px` }}
+                            >
+                              {doc.title || "DOCUMENT TITLE"}
+                            </h2>
+                          ))}
+                        </div>
+
+                        {/* Footer: Gray Bar */}
+                        <div className="bg-gray-100 p-4 text-center border-t-4 border-black">
+                          <div 
+                            className="font-mono font-bold tracking-widest mb-2 border-b-2 border-black pb-2 inline-block"
+                            style={{ fontSize: `${label.fontSizeRef}px` }}
+                          >
+                            {label.refNumber || "REF-NO"}
+                          </div>
+                          <p 
+                            className="whitespace-pre-wrap font-bold text-black uppercase"
+                            style={{ fontSize: `${label.fontSizeDesc}px` }}
+                          >
+                            {label.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* === MINIMALIST THEME === */}
+                    {currentTheme === 'minimal' && (
+                      <div className="flex flex-col h-full p-8 text-left">
+                        {/* Header: Logos Only */}
+                        <div className="h-[30%] border-b border-gray-200 flex items-center justify-around px-4 py-1 mb-8">
+                          {label.logos.length > 0 ? (
+                            label.logos.map((logo, i) => (
+                              <img key={i} src={logo} alt="Logo" className="h-full w-auto max-w-[150px] object-contain grayscale opacity-80" />
+                            ))
+                          ) : (
+                            <div className="text-gray-300 text-xs italic">Upload Logos</div>
+                          )}
+                        </div>
+
+                        {/* Body: Titles */}
+                        <div className="flex-1 flex flex-col justify-center">
+                          {label.documents.map((doc, i) => (
+                            <h2 
+                              key={i} 
+                              className="font-light text-gray-900 leading-tight mb-4 last:mb-0 tracking-tight"
+                              style={{ fontSize: `${label.fontSizeTitle * 1.1}px` }}
+                            >
+                              {doc.title || "Document Title"}
+                            </h2>
+                          ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="mt-auto pt-6 text-gray-500 border-t border-gray-100">
+                          <div 
+                            className="font-light text-gray-400 tracking-widest uppercase mb-2"
+                            style={{ fontSize: `${label.fontSizeRef * 0.8}px` }}
+                          >
+                            {label.refNumber || "REF-NO"}
+                          </div>
+                          <p 
+                            className="whitespace-pre-wrap font-normal"
+                            style={{ fontSize: `${label.fontSizeDesc}px` }}
+                          >
+                            {label.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* === INDUSTRIAL THEME === */}
+                    {currentTheme === 'industrial' && (
+                      <div className="flex flex-col h-full border-4 border-yellow-400 bg-yellow-50">
+                        {/* Caution Header */}
+                        <div className="bg-yellow-400 p-2 text-center border-b-4 border-black">
+                          <div className="flex justify-center items-center gap-2">
+                            <div className="h-4 w-4 bg-black rounded-full"></div>
+                            <span className="font-black text-black uppercase tracking-widest text-sm">ARCHIVE RECORD</span>
+                            <div className="h-4 w-4 bg-black rounded-full"></div>
+                          </div>
+                        </div>
+
+                        {/* Logos Row */}
+                        <div className="flex items-center p-4 border-b-2 border-black border-dashed h-[15%]">
+                          <div className="flex gap-3 h-full w-full">
+                            {label.logos.length > 0 ? (
+                              label.logos.map((logo, i) => (
+                                <img key={i} src={logo} alt="Logo" className="h-full w-auto max-w-[150px] object-contain mix-blend-multiply" />
+                              ))
+                            ) : (
+                              <div className="text-gray-400 text-xs italic">Logos</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Body: Titles */}
+                        <div className="flex-1 flex flex-col justify-center items-center p-6 text-center">
+                          {label.documents.map((doc, i) => (
+                            <h2 
+                              key={i} 
+                              className="font-black text-black uppercase leading-none mb-3 last:mb-0 transform -rotate-1"
+                              style={{ fontSize: `${label.fontSizeTitle * 1.1}px`, textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}
+                            >
+                              {doc.title || "DOCUMENT TITLE"}
+                            </h2>
+                          ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-3 border-t-4 border-black bg-white">
+                          <div 
+                            className="font-mono font-bold bg-black text-yellow-400 px-2 py-1 inline-block mb-2"
+                            style={{ fontSize: `${label.fontSizeRef}px` }}
+                          >
+                            {label.refNumber || "REF-NO"}
+                          </div>
+                          <p 
+                            className="whitespace-pre-wrap font-mono font-bold text-black uppercase text-center"
+                            style={{ fontSize: `${label.fontSizeDesc}px` }}
+                          >
+                            {label.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* === BOX ARCHIVE THEME === */}
+                    {currentTheme === 'box-archive' && (
+                      <div className="flex flex-col h-full bg-white border-2 border-gray-300 rounded-3xl overflow-hidden relative p-1">
+                        <div className="flex flex-col h-full border border-gray-100 rounded-[1.2rem]">
+                          
+                          {/* Header */}
+                          <div className="flex items-center justify-between px-6 pt-6 pb-2">
+                            {/* Logo Area */}
+                            <div className="w-1/3 h-12 flex items-center justify-start gap-2">
+                               {label.logos.length > 0 ? (
+                                  label.logos.map((logo, i) => (
+                                    <React.Fragment key={i}>
+                                      <img src={logo} alt="Logo" className="h-full object-contain" />
+                                      {i < label.logos.length - 1 && (
+                                        <div className="h-8 w-px bg-gray-300 mx-1"></div>
+                                      )}
+                                    </React.Fragment>
+                                  ))
+                                ) : (
+                                  <div className="text-gray-300 text-xs italic">Logo</div>
+                                )}
+                            </div>
+                            {/* Title */}
+                            <h1 className="text-4xl font-sans font-black text-gray-800 tracking-tighter uppercase text-right">
+                              ARCHIVED FILES
+                            </h1>
+                          </div>
+
+                          {/* Sub-header Line */}
+                          <div className="mx-6 border-b-[3px] border-black mb-1"></div>
+                          <div className="mx-6 flex justify-between items-baseline mb-6">
+                             <div className="flex gap-2 items-baseline">
+                               <span className="font-serif font-bold text-gray-700 uppercase tracking-wider text-sm">Reference:</span>
+                               <span className="font-mono font-bold text-lg text-gray-900">{label.refNumber}</span>
+                             </div>
+                             <div className="font-serif italic text-gray-500 text-xs">
+                               {new Date().toLocaleDateString()}
+                             </div>
+                          </div>
+
+                          {/* Body */}
+                          <div className="flex-1 flex flex-col items-center justify-start text-center px-8 pt-4">
+                            <div className="font-serif font-bold text-gray-500 text-2xl mb-6 tracking-widest uppercase border-b border-gray-200 pb-2">
+                              CONTENTS:
+                            </div>
+                            {label.documents.map((doc, i) => (
+                               <h2 key={i} className="font-serif text-3xl font-bold text-gray-900 mb-3 leading-tight">
+                                 {doc.title}
+                               </h2>
+                            ))}
+                          </div>
+
+                          {/* Footer */}
+                          <div className="mx-6 border-t-[3px] border-black mt-auto mb-1"></div>
+                          <div className="mx-6 mb-6 flex h-24">
+                             {/* Col 1: Description */}
+                             <div className="flex-1 border-r-[3px] border-black pr-4 pt-2">
+                                <div className="font-serif font-bold text-gray-600 text-xs uppercase mb-1">Description:</div>
+                                <p className="font-sans text-sm leading-tight text-gray-800 whitespace-pre-wrap">{label.description}</p>
+                             </div>
+                             {/* Col 2: Archived By */}
+                             <div className="w-1/4 border-r-[3px] border-black px-4 pt-2 flex flex-col">
+                                <div className="font-serif font-bold text-gray-600 text-xs uppercase mb-1">Archived by:</div>
+                                <div className="mt-auto border-b border-gray-400 w-full h-4"></div>
+                             </div>
+                             {/* Col 3: Box # */}
+                             <div className="w-1/4 pl-4 pt-2">
+                                <div className="font-serif font-bold text-gray-600 text-xs uppercase mb-1">Box #:</div>
+                                <p className="font-sans text-3xl font-black text-gray-900">
+                                  {String(label.id + 1).padStart(6, '0')}
+                                </p>
+                             </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
@@ -454,7 +834,7 @@ export default function App() {
       <style>{`
         @media print {
           @page {
-            size: A4 landscape;
+            size: ${printMode === 'grid' ? 'A4 landscape' : 'auto'};
             margin: 0;
           }
           body {
