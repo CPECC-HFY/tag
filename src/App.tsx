@@ -15,6 +15,7 @@ interface LabelData {
   documents: DocumentItem[];
   refNumber: string;
   description: string;
+  signature?: string; // Optional signature image URL
   fontFamily: string;
   fontSizeTitle: number;
   fontSizeRef: number;
@@ -167,6 +168,35 @@ export default function App() {
           ...newLabels[selectedLabelIndex],
           logos: newLabels[selectedLabelIndex].logos.filter((_, i) => i !== logoIndex)
         };
+        return newLabels;
+      }
+    });
+  };
+
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const imageUrl = URL.createObjectURL(file);
+      
+      setLabels(prevLabels => {
+        const newLabels = [...prevLabels];
+        if (isGlobalMode) {
+          return newLabels.map(label => ({ ...label, signature: imageUrl }));
+        } else {
+          newLabels[selectedLabelIndex] = { ...newLabels[selectedLabelIndex], signature: imageUrl };
+          return newLabels;
+        }
+      });
+    }
+  };
+
+  const removeSignature = () => {
+    setLabels(prevLabels => {
+      const newLabels = [...prevLabels];
+      if (isGlobalMode) {
+        return newLabels.map(label => ({ ...label, signature: undefined }));
+      } else {
+        newLabels[selectedLabelIndex] = { ...newLabels[selectedLabelIndex], signature: undefined };
         return newLabels;
       }
     });
@@ -439,9 +469,30 @@ export default function App() {
                 value={currentData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm mb-2"
                 placeholder="e.g. Box Contents..."
               />
+              
+              {/* Signature Upload */}
+              <div className="flex items-center gap-2">
+                {currentData.signature ? (
+                  <div className="relative group w-full h-12 border rounded bg-gray-50 flex items-center justify-center overflow-hidden">
+                    <img src={currentData.signature} alt="Signature" className="max-h-full max-w-full object-contain" />
+                    <button 
+                      onClick={removeSignature}
+                      className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-xs"
+                    >
+                      Remove Signature
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-full h-12 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-colors text-xs text-gray-500 gap-2">
+                    <Upload className="w-3 h-3" />
+                    <span>Upload Signature (PNG)</span>
+                    <input type="file" accept="image/png,image/jpeg" onChange={handleSignatureUpload} className="hidden" />
+                  </label>
+                )}
+              </div>
             </div>
           </div>
 
@@ -535,13 +586,20 @@ export default function App() {
                         </div>
 
                         {/* Section 3: Footer / Description (Bottom) */}
-                        <div className="flex-1 flex flex-col justify-center items-center px-4 py-2 text-center bg-white">
+                        <div className="flex-1 flex flex-col justify-center items-center px-4 py-2 text-center bg-white relative">
                           <p 
-                            className="whitespace-pre-wrap font-bold text-black uppercase leading-tight"
+                            className="whitespace-pre-wrap font-bold text-black uppercase leading-tight relative z-10"
                             style={{ fontSize: `${label.fontSizeDesc}px` }}
                           >
                             {label.description}
                           </p>
+                          {label.signature && (
+                            <img 
+                              src={label.signature} 
+                              alt="Signature" 
+                              className="absolute bottom-2 right-4 h-12 object-contain opacity-80 mix-blend-multiply pointer-events-none" 
+                            />
+                          )}
                         </div>
                       </>
                     )}
@@ -576,7 +634,7 @@ export default function App() {
                         </div>
 
                         {/* Footer: Ref & Desc */}
-                        <div className="mt-auto pt-4 border-t border-gray-100">
+                        <div className="mt-auto pt-4 border-t border-gray-100 relative">
                           <div className="mb-2">
                             <span 
                               className="font-bold text-gray-900 block"
@@ -586,11 +644,18 @@ export default function App() {
                             </span>
                           </div>
                           <p 
-                            className="whitespace-pre-wrap text-gray-600"
+                            className="whitespace-pre-wrap text-gray-600 relative z-10"
                             style={{ fontSize: `${label.fontSizeDesc}px` }}
                           >
                             {label.description}
                           </p>
+                          {label.signature && (
+                            <img 
+                              src={label.signature} 
+                              alt="Signature" 
+                              className="absolute bottom-0 right-0 h-12 object-contain opacity-80 mix-blend-multiply pointer-events-none" 
+                            />
+                          )}
                         </div>
                       </div>
                     )}
@@ -627,7 +692,7 @@ export default function App() {
                         </div>
 
                         {/* Footer: Gray Bar */}
-                        <div className="bg-gray-100 p-4 text-center border-t-4 border-black">
+                        <div className="bg-gray-100 p-4 text-center border-t-4 border-black relative">
                           <div 
                             className="font-mono font-bold tracking-widest mb-2 border-b-2 border-black pb-2 inline-block"
                             style={{ fontSize: `${label.fontSizeRef}px` }}
@@ -635,11 +700,18 @@ export default function App() {
                             {label.refNumber || "REF-NO"}
                           </div>
                           <p 
-                            className="whitespace-pre-wrap font-bold text-black uppercase"
+                            className="whitespace-pre-wrap font-bold text-black uppercase relative z-10"
                             style={{ fontSize: `${label.fontSizeDesc}px` }}
                           >
                             {label.description}
                           </p>
+                          {label.signature && (
+                            <img 
+                              src={label.signature} 
+                              alt="Signature" 
+                              className="absolute bottom-2 right-4 h-12 object-contain opacity-80 mix-blend-multiply pointer-events-none" 
+                            />
+                          )}
                         </div>
                       </div>
                     )}
@@ -672,7 +744,7 @@ export default function App() {
                         </div>
 
                         {/* Footer */}
-                        <div className="mt-auto pt-6 text-gray-500 border-t border-gray-100">
+                        <div className="mt-auto pt-6 text-gray-500 border-t border-gray-100 relative">
                           <div 
                             className="font-light text-gray-400 tracking-widest uppercase mb-2"
                             style={{ fontSize: `${label.fontSizeRef * 0.8}px` }}
@@ -680,11 +752,18 @@ export default function App() {
                             {label.refNumber || "REF-NO"}
                           </div>
                           <p 
-                            className="whitespace-pre-wrap font-normal"
+                            className="whitespace-pre-wrap font-normal relative z-10"
                             style={{ fontSize: `${label.fontSizeDesc}px` }}
                           >
                             {label.description}
                           </p>
+                          {label.signature && (
+                            <img 
+                              src={label.signature} 
+                              alt="Signature" 
+                              className="absolute bottom-0 right-0 h-10 object-contain opacity-60 pointer-events-none" 
+                            />
+                          )}
                         </div>
                       </div>
                     )}
@@ -728,7 +807,7 @@ export default function App() {
                         </div>
 
                         {/* Footer */}
-                        <div className="p-3 border-t-4 border-black bg-white">
+                        <div className="p-3 border-t-4 border-black bg-white relative">
                           <div 
                             className="font-mono font-bold bg-black text-yellow-400 px-2 py-1 inline-block mb-2"
                             style={{ fontSize: `${label.fontSizeRef}px` }}
@@ -736,11 +815,18 @@ export default function App() {
                             {label.refNumber || "REF-NO"}
                           </div>
                           <p 
-                            className="whitespace-pre-wrap font-mono font-bold text-black uppercase text-center"
+                            className="whitespace-pre-wrap font-mono font-bold text-black uppercase text-center relative z-10"
                             style={{ fontSize: `${label.fontSizeDesc}px` }}
                           >
                             {label.description}
                           </p>
+                          {label.signature && (
+                            <img 
+                              src={label.signature} 
+                              alt="Signature" 
+                              className="absolute bottom-2 right-4 h-12 object-contain opacity-90 mix-blend-multiply pointer-events-none transform -rotate-6" 
+                            />
+                          )}
                         </div>
                       </div>
                     )}
@@ -806,9 +892,17 @@ export default function App() {
                                 <p className="font-sans text-sm leading-tight text-gray-800 whitespace-pre-wrap">{label.description}</p>
                              </div>
                              {/* Col 2: Archived By */}
-                             <div className="w-1/4 border-r-[3px] border-black px-4 pt-2 flex flex-col">
+                             <div className="w-1/4 border-r-[3px] border-black px-4 pt-2 flex flex-col relative">
                                 <div className="font-serif font-bold text-gray-600 text-xs uppercase mb-1">Archived by:</div>
-                                <div className="mt-auto border-b border-gray-400 w-full h-4"></div>
+                                <div className="mt-auto border-b border-gray-400 w-full h-4 relative">
+                                  {label.signature && (
+                                    <img 
+                                      src={label.signature} 
+                                      alt="Signature" 
+                                      className="absolute bottom-1 left-1/2 -translate-x-1/2 h-12 object-contain mix-blend-multiply pointer-events-none" 
+                                    />
+                                  )}
+                                </div>
                              </div>
                              {/* Col 3: Box # */}
                              <div className="w-1/4 pl-4 pt-2">
