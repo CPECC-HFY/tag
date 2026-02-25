@@ -1,0 +1,5 @@
+{
+  "name": "Archive Label Generator",
+  "description": "A tool to generate and print 4-quadrant A4 archive labels for engineering document control.",
+  "requestFramePermissions": []
+}
